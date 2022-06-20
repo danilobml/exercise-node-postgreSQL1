@@ -14,6 +14,18 @@ app.get("/api/users", (req, res) => {
     .catch((error) => res.sendStatus(500));
 });
 
+app.get("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+  const getOne = {
+    text: "SELECT * FROM users WHERE id = $1",
+    values: [id],
+  };
+  pool
+    .query(getOne)
+    .then((data) => res.json(data.rows))
+    .catch((error) => res.sendStatus(500));
+});
+
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
