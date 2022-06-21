@@ -7,6 +7,8 @@ const { Pool } = require("pg");
 
 const pool = new Pool();
 
+// Users:
+// 1.Get all:
 app.get("/api/users", (req, res) => {
   pool
     .query("SELECT * FROM users")
@@ -14,6 +16,7 @@ app.get("/api/users", (req, res) => {
     .catch((error) => res.sendStatus(500));
 });
 
+// 2.Get one
 app.get("/api/users/:id", (req, res) => {
   const { id } = req.params;
   const getOne = {
@@ -23,6 +26,20 @@ app.get("/api/users/:id", (req, res) => {
   pool
     .query(getOne)
     .then((data) => res.json(data.rows))
+    .catch((error) => res.sendStatus(500));
+});
+
+// 3.Create (post):
+app.post("/api/users", (req, res) => {
+  const { first_name, last_name, age, active } = req.body;
+  const createOne = {
+    text: `INSERT INTO users (first_name, last_name, age, active)
+ VALUES ($1, $2, $3, $4) RETURNING *`,
+    values: [first_name, last_name, age, active],
+  };
+  pool
+    .query(createOne)
+    .then((data) => res.status(201).json(data.rows))
     .catch((error) => res.sendStatus(500));
 });
 
