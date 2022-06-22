@@ -2,16 +2,13 @@ require("dotenv").config();
 const express = require("express");
 const userRouter = express.Router();
 userRouter.use(express.json());
-// const db = require("../database/client");
-const { Pool } = require("pg");
-const pool = new Pool();
+const db = require("../database/client");
 const { validationResult } = require("express-validator");
 const validateUser = require("../validators/validateUsers");
 
 // 1.Get all:
 userRouter.get("/", (req, res) => {
-  pool
-    .query("SELECT * FROM users ORDER BY id ASC")
+  db.query("SELECT * FROM users ORDER BY id ASC")
     .then((data) => res.json(data.rows))
     .catch((error) => res.sendStatus(500));
 });
@@ -24,8 +21,7 @@ userRouter.get("/:id", (req, res) => {
             WHERE id = $1`,
     values: [id],
   };
-  pool
-    .query(getOneUser)
+  db.query(getOneUser)
     .then((data) => res.json(data.rows))
     .catch((error) => res.sendStatus(500));
 });
@@ -44,8 +40,7 @@ userRouter.post("/", validateUser, (req, res) => {
             RETURNING *`,
     values: [first_name, last_name, age, active],
   };
-  pool
-    .query(createOne)
+  db.query(createOne)
     .then((data) => res.status(201).json(data.rows))
     .catch((error) => res.sendStatus(500).send(e.message));
 });
@@ -68,8 +63,7 @@ userRouter.put("/:id", validateUser, (req, res) => {
            RETURNING *`,
     values: [first_name, last_name, age, active, id],
   };
-  pool
-    .query(updateUser)
+  db.query(updateUser)
     .then((data) => res.json(data.rows))
     .catch((error) => res.sendStatus(500));
 });
@@ -83,8 +77,7 @@ userRouter.delete("/:id", (req, res) => {
             RETURNING *`,
     values: [id],
   };
-  pool
-    .query(deleteUser)
+  db.query(deleteUser)
     .then((data) => {
       // if (!data.rows.length) {
       //   return res.status(404).send("This order wasn't found");
