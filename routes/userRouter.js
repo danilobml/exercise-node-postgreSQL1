@@ -72,7 +72,7 @@ userRouter.put("/:id", validateUser, (req, res) => {
 userRouter.delete("/:id", (req, res) => {
   const { id } = req.params;
   const deleteUser = {
-    text: `DELETE FROM orders
+    text: `DELETE FROM users
             WHERE id = $1
             RETURNING *`,
     values: [id],
@@ -85,6 +85,69 @@ userRouter.delete("/:id", (req, res) => {
       res.status(204).json(data.rows);
     })
     .catch((error) => res.sendStatus(500));
+});
+
+// Bonus: get all orders linked to a specific user
+userRouter.get("/:id/orders", (req, res) => {
+  const { id } = req.params;
+  const getUserOrders = {
+    text: `SELECT
+          first_name,
+          last_name,
+          orders.id,
+          price, 
+          date
+          FROM
+          users
+          INNER JOIN orders
+           ON user_id = users.id
+          WHERE users.id = $1;`,
+    values: [id],
+  };
+  db.query(getUserOrders)
+    .then((data) => {
+      if (!data.rows.length) {
+        return res.status(404).send("User not found");
+      }
+      res.json(data.rows);
+    })
+    .catch((error) => res.status(500).send(error.message));
+});
+
+//Bonus: set a user as inactive if they have never ordered anything
+userRouter.put("/:id/check-inactive", (req, res) => {
+  const { id } = req.params;
+  const checkInactive = {
+    text: `SELECT first_name, last_name, COUNT(user_id) AS order_count 
+            FROM users
+            LEFT JOIN orders
+              ON users.id = orders.user_id
+            WHERE users.id = $1
+            GROUP BY first_name, last_name
+            ;`,
+    values: [id],
+  };
+  db.query(checkInactive)
+    .then((data) => {
+      console.log(data.rows);
+      if (!data.rows.length) {
+        return res.status(404).send("Not found");
+      }
+      if (Number(data.rows[0].order_count) < 1) {
+        const setInactive = {
+          text: `UPDATE users
+                  SET active = false
+                  WHERE id = $1
+                  RETURNING *`,
+          values: [id],
+        };
+        return db.query(setInactive);
+      } else {
+        return res.send("The user has already placed one or more orders before.");
+      }
+    })
+    .then((data) => res.json(data.rows))
+    .catch((error) => res.status(500).send(error.message));
 });
 
 module.exports = userRouter;
